@@ -1,0 +1,7 @@
+--- Daily Report (2025-12-01) for ^FCHI (CAC40)---
+Closing Price: 8122.71
+Cumulative Return: 1.25%
+Annualized Volatility: 16.93%
+Sharpe Ratio: 0.19
+Max Drawdown: -15.36%
+Daily VaR 95%: -1.59%
