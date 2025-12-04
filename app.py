@@ -10,7 +10,7 @@ from strategies import moving_average_strategy, momentum_strategy
 
 # ----------------- Global config -----------------
 st.set_page_config(
-    page_title="Quant Dashboard",
+    page_title="Quant Portfolio Dashboard",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -26,9 +26,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("Quant Dashboard")
+st.title("Quant Portfolio Dashboard")
 st.caption(
-    "Prototype platform for single-asset analysis and multi-asset portfolio analysis."
+    "Single-asset and multi-asset analytics for quantitative finance."
 )
 
 # ----------------- Navigation -----------------
@@ -109,65 +109,90 @@ def format_timestamp_utc(ts: dt.datetime | None) -> str:
 # ----------------- Pages content -----------------
 # ========== HOME ==========
 if st.session_state.page == "Home":
-    st.subheader("Home")
-
-    # Intro block
+    # Hero section
     st.markdown(
         """
-        Welcome to the **Quant Dashboard**.  
-        This application was developed as part of the *Python / Git / Linux for Finance* project
-        to provide a quantitative analysis environment close to a professional tool.
+        <div style="padding: 1rem 0 1.5rem 0;">
+            <h2 style="margin-bottom: 0.1rem;">Quant Portfolio Dashboard</h2>
+            <p style="font-size: 0.95rem; color: #5c6370; margin-bottom: 0.5rem;">
+                Single-asset and multi-asset analytics for portfolio managers and quantitative teams.
+            </p>
+        </div>
         """,
-        unsafe_allow_html=False,
+        unsafe_allow_html=True,
     )
+
+    hero_col1, hero_col2 = st.columns([2, 1])
+
+    with hero_col1:
+        st.markdown(
+            """
+            <p style="font-size: 0.95rem; color: #4b4f58;">
+            This dashboard delivers a professional workflow for market data retrieval, backtesting
+            and portfolio risk monitoring. Navigate between the Single Asset module and the
+            Multi-Asset Portfolio module to explore trading strategies and portfolio construction.
+            </p>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        cta_col1, cta_col2 = st.columns(2)
+        with cta_col1:
+            if st.button("Open Module A – Single Asset", use_container_width=True):
+                go_single_asset()
+        with cta_col2:
+            if st.button("Open Module B – Portfolio", use_container_width=True):
+                go_portfolio()
+
+    with hero_col2:
+        st.info(
+            "Project developed as part of the **Python / Git / Linux for Finance** course.\n\n"
+            "**Authors:** Lucas STALTER and Christian YU\n"
+            "**Program:** Master 1 – Ingénierie Financière, ESILV (Paris – La Défense)"
+        )
 
     st.markdown("---")
 
-    # 3 columns of feature "cards"
+    # Key value propositions
+    st.markdown("### 🚀 What this dashboard offers")
+
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("### 🎯 Objective")
+        st.markdown("#### 🎯 Market & strategies")
         st.write(
-            "- Centralize the analysis of a single asset or a portfolio.\n"
-            "- Visualize performance over time.\n"
-            "- Monitor the impact of different strategies in real time."
+            "- Single-asset analysis with live market data.\n"
+            "- Buy & Hold, Moving Average and Momentum backtests.\n"
+            "- Flexible parameters (lookback windows, analysis horizon)."
         )
 
     with col2:
-        st.markdown("### 🧱 Architecture")
+        st.markdown("#### 📊 Portfolio analytics")
         st.write(
-            "- **Module A**: single-asset analysis (price, Buy & Hold, MA, momentum).\n"
-            "- **Module B**: equal-weight multi-asset portfolio.\n"
-            "- **Back-end**: Python / yfinance / pandas / numpy."
+            "- Multi-asset equal-weight or custom-weight portfolios.\n"
+            "- Rebalancing by frequency (daily, weekly, monthly).\n"
+            "- Correlation matrix and diversified equity curves."
         )
 
     with col3:
-        st.markdown("### 📊 Key indicators")
+        st.markdown("#### 🧮 Risk & reporting")
         st.write(
-            "- Cumulative return and annualized volatility.\n"
-            "- Sharpe ratio, maximum drawdown.\n"
-            "- Historical 95% VaR on daily returns."
+            "- Cumulative return, annualized volatility and Sharpe ratio.\n"
+            "- Maximum drawdown and historical 95% Value-at-Risk.\n"
+            "- Automated daily report script on benchmark index."
         )
 
     st.markdown("---")
 
-    st.markdown("### 🚀 How to use the dashboard")
+    # Usage guide
+    st.markdown("### 📌 How to use the platform")
     st.write(
-        "1. **Module A (Single Asset)** – choose an asset and a period, then compare "
-        "Buy & Hold, moving-average, and momentum strategies on the same chart.\n"
-        "2. **Module B (Portfolio)** – select several assets, build an equal-weight "
-        "portfolio, and observe its global performance and correlation matrix.\n"
-        "3. Adjust parameters (moving-average windows, momentum lookback, analysis period) "
-        "to test different market scenarios."
-    )
-
-    st.markdown("### 🔧 Future improvements")
-    st.write(
-        "The project can later be extended with:\n"
-        "- portfolio weight optimization (min-variance, max Sharpe),\n"
-        "- additional trading strategies,\n"
-        "- deployment on a Linux server for 24/7 availability."
+        "1. **Module A – Single Asset:** select an instrument, choose the analysis period and compare Buy & Hold, "
+        "Moving Average and Momentum strategies on the same equity curve.\n"
+        "2. **Module B – Portfolio:** build a multi-asset portfolio, choose equal or custom weights and a "
+        "rebalancing frequency, then analyse diversification and risk metrics.\n"
+        "3. Adjust strategy parameters, export tables if needed and use the daily report for an end-of-day "
+        "quantitative summary."
     )
 
 # ========== MODULE A: SINGLE ASSET ==========
@@ -297,16 +322,11 @@ elif st.session_state.page == "Module A: Single Asset":
 
             with col_bh:
                 st.markdown("### Buy & Hold")
-                st.metric("Cumulative return", f"{metrics_bh['cum_return']:.2%}",
-                          help="Total return of holding the asset over the whole period.")
-                st.metric("Annualized volatility", f"{metrics_bh['ann_vol']:.2%}",
-                          help="Annualized standard deviation of daily returns.")
-                st.metric("Sharpe ratio", f"{metrics_bh['sharpe']:.2f}",
-                          help="Excess return per unit of volatility.")
-                st.metric("Maximum drawdown", f"{metrics_bh['max_dd']:.2%}",
-                          help="Largest peak-to-trough loss over the period.")
-                st.metric("Daily 95% VaR", f"{metrics_bh['var_95']:.2%}",
-                          help="Historical 95% Value-at-Risk on daily returns.")
+                st.metric("Cumulative return", f"{metrics_bh['cum_return']:.2%}")
+                st.metric("Annualized volatility", f"{metrics_bh['ann_vol']:.2%}")
+                st.metric("Sharpe ratio", f"{metrics_bh['sharpe']:.2f}")
+                st.metric("Maximum drawdown", f"{metrics_bh['max_dd']:.2%}")
+                st.metric("Daily 95% VaR", f"{metrics_bh['var_95']:.2%}")
 
             with col_ma:
                 st.markdown("### Moving Average Strategy")
