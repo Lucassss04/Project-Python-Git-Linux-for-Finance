@@ -29,7 +29,8 @@ def generate_daily_report():
     returns = data["return"].dropna()
     metrics = compute_performance_metrics(returns)
 
-    last_price = float(data["price"].iloc[-1])
+    last_price = float(data["price"].iloc[-1].item())
+
 
     report_content = f"""
 --- Daily Report ({end_date}) for {TICKER} (CAC 40) ---

@@ -1,23 +1,33 @@
 import datetime as dt
-import yfinance as yf
+
+import numpy as np
 import pandas as pd
+import streamlit as st
+import yfinance as yf
 
 
-def load_yahoo_data(ticker: str, start: dt.date, end: dt.date) -> pd.DataFrame | None:
-    """Télécharge les prix quotidiens via yfinance et calcule les rendements simples."""
-    data = yf.download(ticker, start=start, end=end)
-
-    if data.empty:
+@st.cache_data(show_spinner=False)
+def load_yahoo_data(ticker: str, start, end):
+    """
+    Download daily data from Yahoo Finance and return a DataFrame
+    with columns: price, return.
+    """
+    try:
+        df = yf.download(
+            ticker,
+            start=start,
+            end=end,
+            auto_adjust=True,
+            progress=False,
+        )
+    except Exception:
         return None
 
-    # Certaines séries (FX, indices) n'ont pas 'Adj Close'
-    if "Adj Close" in data.columns:
-        price_col = "Adj Close"
-    else:
-        price_col = "Close"
+    if df is None or df.empty:
+        return None
 
-    data = data[[price_col]].rename(columns={price_col: "price"})
-    data["return"] = data["price"].pct_change()
-    data["equity_bh"] = (1 + data["return"]).cumprod()
-    return data
+    df = df[["Close"]].rename(columns={"Close": "price"})
+    df["return"] = df["price"].pct_change()
+    df = df.dropna()
 
+    return df

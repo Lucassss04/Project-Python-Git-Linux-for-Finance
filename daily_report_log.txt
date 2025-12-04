@@ -5,3 +5,12 @@ Annualized Volatility: 16.93%
 Sharpe Ratio: 0.19
 Max Drawdown: -15.36%
 Daily VaR 95%: -1.59%
+
+--- Daily Report (2025-12-04) for ^FCHI (CAC 40) ---
+Closing price: 8087.42
+Cumulative return (252d): 1.22%
+Annualized volatility: 16.83%
+Sharpe ratio: 0.19
+Maximum drawdown: -13.30%
+Daily 95% VaR: -1.59%
+
