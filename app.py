@@ -27,7 +27,6 @@ st.markdown(
 )
 
 st.title("Quant Portfolio Dashboard")
-st.caption("Single-asset and multi-asset analytics for quantitative finance.")
 
 # ----------------- Navigation -----------------
 if "page" not in st.session_state:
