@@ -99,6 +99,13 @@ UNIVERSE_BY_CATEGORY = {
     "Mixed (all types)": UNIVERSE,
 }
 
+
+def format_timestamp_utc(ts: dt.datetime | None) -> str:
+    if ts is None:
+        return "-"
+    return ts.strftime("%Y-%m-%d %H:%M:%S")
+
+
 # ----------------- Pages content -----------------
 # ========== HOME ==========
 if st.session_state.page == "Home":
@@ -145,7 +152,6 @@ if st.session_state.page == "Home":
 
     st.markdown("---")
 
-    # "How to use" section
     st.markdown("### 🚀 How to use the dashboard")
     st.write(
         "1. **Module A (Single Asset)** – choose an asset and a period, then compare "
@@ -156,20 +162,19 @@ if st.session_state.page == "Home":
         "to test different market scenarios."
     )
 
-    # "Future work" section
     st.markdown("### 🔧 Future improvements")
     st.write(
         "The project can later be extended with:\n"
         "- portfolio weight optimization (min-variance, max Sharpe),\n"
         "- additional trading strategies,\n"
-        "- deployment on a Linux server (PythonAnywhere) for 24/7 availability."
+        "- deployment on a Linux server for 24/7 availability."
     )
 
 # ========== MODULE A: SINGLE ASSET ==========
 elif st.session_state.page == "Module A: Single Asset":
     st.subheader("Module A: Single Asset – Buy & Hold vs MA vs Momentum")
 
-    # Asset selection (whole universe)
+    # Asset selection
     col_left, col_right = st.columns([2, 1])
     with col_left:
         asset_label = st.selectbox("Choose an asset:", list(UNIVERSE.keys()))
@@ -211,8 +216,6 @@ elif st.session_state.page == "Module A: Single Asset":
                 "Momentum lookback (days)", min_value=10, max_value=252, value=60
             )
 
-    data = None  # ensure variable exists outside the button scope
-
     if st.button("Load / refresh data", type="primary"):
         with st.spinner("Downloading data..."):
             data = load_yahoo_data(ticker, start, end)
@@ -221,10 +224,9 @@ elif st.session_state.page == "Module A: Single Asset":
             st.error("No data received for this asset and period.")
         else:
             st.session_state.last_update_single = dt.datetime.utcnow()
-
             st.success(f"Data loaded: {len(data)} observations.")
 
-            # === Current value block – Single Asset ===
+            # === KPIs row – Single Asset ===
             last_price = float(data["price"].iloc[-1])
             today_returns = data["return"].loc[
                 data.index.date == data.index[-1].date()
@@ -232,20 +234,22 @@ elif st.session_state.page == "Module A: Single Asset":
             day_ret = float(today_returns.sum()) if not today_returns.empty else 0.0
             cum_bh = (1 + data["return"]).cumprod().iloc[-1] - 1
 
-            col_cv1, col_cv2, col_cv3 = st.columns(3)
-            col_cv1.metric(
+            kpi1, kpi2, kpi3 = st.columns(3)
+            kpi1.metric(
                 label="Last price",
                 value=f"{last_price:,.2f}",
                 delta=f"{day_ret:.2%}",
-                help="Last close and today's return.",
+                help="Last available close and today's return.",
             )
-            col_cv2.metric(
+            kpi2.metric(
                 label="Cumulative return (Buy & Hold)",
                 value=f"{cum_bh:.2%}",
+                help="Total return of a passive Buy & Hold position over the selected period.",
             )
-            col_cv3.metric(
+            kpi3.metric(
                 label="Last update (UTC)",
-                value=st.session_state.last_update_single.strftime("%Y-%m-%d %H:%M:%S"),
+                value=format_timestamp_utc(st.session_state.last_update_single),
+                help="Time when data was last refreshed.",
             )
 
             # Strategies
@@ -254,7 +258,7 @@ elif st.session_state.page == "Module A: Single Asset":
             )
             mom_df = momentum_strategy(data, lookback=lookback_mom)
 
-            # Charts
+            # Tabs: charts and data
             chart_tab, table_tab = st.tabs(["Charts", "Raw data"])
 
             with chart_tab:
@@ -293,11 +297,16 @@ elif st.session_state.page == "Module A: Single Asset":
 
             with col_bh:
                 st.markdown("### Buy & Hold")
-                st.metric("Cumulative return", f"{metrics_bh['cum_return']:.2%}")
-                st.metric("Annualized volatility", f"{metrics_bh['ann_vol']:.2%}")
-                st.metric("Sharpe ratio", f"{metrics_bh['sharpe']:.2f}")
-                st.metric("Maximum drawdown", f"{metrics_bh['max_dd']:.2%}")
-                st.metric("Daily 95% VaR", f"{metrics_bh['var_95']:.2%}")
+                st.metric("Cumulative return", f"{metrics_bh['cum_return']:.2%}",
+                          help="Total return of holding the asset over the whole period.")
+                st.metric("Annualized volatility", f"{metrics_bh['ann_vol']:.2%}",
+                          help="Annualized standard deviation of daily returns.")
+                st.metric("Sharpe ratio", f"{metrics_bh['sharpe']:.2f}",
+                          help="Excess return per unit of volatility.")
+                st.metric("Maximum drawdown", f"{metrics_bh['max_dd']:.2%}",
+                          help="Largest peak-to-trough loss over the period.")
+                st.metric("Daily 95% VaR", f"{metrics_bh['var_95']:.2%}",
+                          help="Historical 95% Value-at-Risk on daily returns.")
 
             with col_ma:
                 st.markdown("### Moving Average Strategy")
@@ -317,7 +326,7 @@ elif st.session_state.page == "Module A: Single Asset":
 
 # ========== MODULE B: PORTFOLIO ==========
 elif st.session_state.page == "Module B: Portfolio":
-    st.subheader("Module B: Portfolio – Equal-weight prototype")
+    st.subheader("Module B: Portfolio – Equal-weight / Custom")
 
     # --- 1) Choose one or several categories ---
     all_categories = list(UNIVERSE_BY_CATEGORY.keys())
@@ -375,10 +384,17 @@ elif st.session_state.page == "Module B: Portfolio":
             for label in selected_labels:
                 tkr = current_universe[label]
                 with st.spinner(f"Downloading {label} ({tkr})..."):
-                    df = load_yahoo_data(tkr, start, end)
-                if df is None:
-                    st.error(f"No data for {label}.")
+                    try:
+                        df = load_yahoo_data(tkr, start, end)
+                    except Exception:
+                        df = None
+
+                if df is None or df.empty:
+                    st.warning(
+                        f"No valid data for {label}. It will be excluded from the portfolio."
+                    )
                     continue
+
                 returns_dict[label] = df["return"]
                 prices_dict[label] = df["price"]
 
@@ -388,17 +404,85 @@ elif st.session_state.page == "Module B: Portfolio":
                 returns = pd.concat(returns_dict, axis=1).dropna()
                 prices = pd.concat(prices_dict, axis=1).reindex(returns.index)
 
-                n = returns.shape[1]
-                weights = np.array([1.0 / n] * n)
-                weight_series = pd.Series(weights, index=returns.columns)
+                asset_list = list(returns.columns)
 
-                st.markdown("### Portfolio weights (equal-weight)")
-                st.dataframe(weight_series.rename("Weight"))
+                # ---------- Allocation block ----------
+                st.markdown("### Portfolio allocation")
 
-                portfolio_returns = (returns * weights).sum(axis=1)
+                allocation_mode = st.radio(
+                    "Allocation mode:",
+                    ["Equal-weight", "Custom weights"],
+                    horizontal=True,
+                    help="Choose between equal weights or custom user-defined weights.",
+                )
+
+                if allocation_mode == "Equal-weight":
+                    n = returns.shape[1]
+                    weights = np.array([1.0 / n] * n)
+                else:
+                    st.write("Set custom weights (they must sum to 100%).")
+                    custom_weights = []
+                    for asset in asset_list:
+                        w = st.slider(
+                            f"Weight for {asset}",
+                            min_value=0.0,
+                            max_value=100.0,
+                            value=float(100.0 / len(asset_list)),
+                            step=1.0,
+                        )
+                        custom_weights.append(w)
+
+                    total_w = sum(custom_weights)
+                    if total_w == 0:
+                        st.warning(
+                            "Total weight is 0. Falling back to equal-weight allocation."
+                        )
+                        n = len(asset_list)
+                        weights = np.array([1.0 / n] * n)
+                    else:
+                        weights = np.array(custom_weights) / total_w
+
+                weights_series = pd.Series(weights, index=asset_list)
+                st.dataframe(weights_series.rename("Weight"))
+
+                # ---------- Rebalancing frequency ----------
+                rebalance_freq = st.selectbox(
+                    "Rebalancing frequency",
+                    options=["Daily", "Weekly", "Monthly"],
+                    index=0,
+                    help="How often portfolio weights are reset to target weights.",
+                )
+
+                weights_df = pd.DataFrame(
+                    index=returns.index, columns=asset_list, dtype=float
+                )
+
+                if rebalance_freq == "Daily":
+                    for col in asset_list:
+                        weights_df[col] = weights_series[col]
+                elif rebalance_freq == "Weekly":
+                    # Rebalance every Monday
+                    current_w = weights_series.copy()
+                    for date in returns.index:
+                        if date.weekday() == 0:  # Monday
+                            current_w = weights_series.copy()
+                        weights_df.loc[date] = current_w
+                else:  # Monthly
+                    current_month = None
+                    current_w = weights_series.copy()
+                    for date in returns.index:
+                        month_id = (date.year, date.month)
+                        if current_month != month_id:
+                            current_month = month_id
+                            current_w = weights_series.copy()
+                        weights_df.loc[date] = current_w
+
+                weights_df = weights_df.astype(float)
+
+                portfolio_returns = (returns * weights_df).sum(axis=1)
                 portfolio_equity = (1 + portfolio_returns).cumprod()
 
-                # === Current value block – Portfolio ===
+                # ---------- KPIs row – Portfolio ----------
                 st.session_state.last_update_portfolio = dt.datetime.utcnow()
 
                 initial_nav = 100.0
@@ -408,27 +492,30 @@ elif st.session_state.page == "Module B: Portfolio":
                     portfolio_returns.index.date
                     == portfolio_returns.index[-1].date()
                 ]
-                day_ret_pct = float(today_port_ret.sum()) if not today_port_ret.empty else 0.0
+                day_ret_pct = (
+                    float(today_port_ret.sum()) if not today_port_ret.empty else 0.0
+                )
                 day_pnl_value = current_nav * day_ret_pct
 
-                col_p1, col_p2, col_p3 = st.columns(3)
-                col_p1.metric(
+                pk1, pk2, pk3 = st.columns(3)
+                pk1.metric(
                     label="Portfolio NAV",
                     value=f"{current_nav:,.2f}",
                     delta=f"{day_pnl_value:,.2f}",
                     help="Reference NAV starts at 100; delta is today's PnL.",
                 )
-                col_p2.metric(
+                pk2.metric(
                     label="Portfolio cumulative return",
                     value=f"{portfolio_equity.iloc[-1] - 1:.2%}",
+                    help="Total return of the portfolio since the start of the period.",
                 )
-                col_p3.metric(
+                pk3.metric(
                     label="Last update (UTC)",
-                    value=st.session_state.last_update_portfolio.strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
+                    value=format_timestamp_utc(st.session_state.last_update_portfolio),
+                    help="Time when portfolio data was last refreshed.",
                 )
 
+                # ---------- Charts ----------
                 st.subheader("Equity curves – assets vs portfolio")
 
                 chart_df = pd.DataFrame(index=returns.index)
@@ -437,21 +524,39 @@ elif st.session_state.page == "Module B: Portfolio":
                 chart_df["Portfolio"] = portfolio_equity
                 st.line_chart(chart_df)
 
+                # ---------- Correlation ----------
                 st.subheader("Return correlation matrix")
                 corr = returns.corr()
                 st.dataframe(
                     corr.style.background_gradient(cmap="RdBu_r", vmin=-1, vmax=1)
                 )
 
+                # ---------- Metrics ----------
                 st.subheader("Performance and risk metrics – Portfolio")
                 port_metrics = compute_performance_metrics(portfolio_returns)
 
                 c1, c2, c3 = st.columns(3)
                 with c1:
                     st.metric("Cumulative return", f"{port_metrics['cum_return']:.2%}")
-                    st.metric("Daily 95% VaR", f"{port_metrics['var_95']:.2%}")
+                    st.metric(
+                        "Daily 95% VaR",
+                        f"{port_metrics['var_95']:.2%}",
+                        help="Historical 95% Value-at-Risk on daily portfolio returns.",
+                    )
                 with c2:
-                    st.metric("Annualized volatility", f"{port_metrics['ann_vol']:.2%}")
+                    st.metric(
+                        "Annualized volatility",
+                        f"{port_metrics['ann_vol']:.2%}",
+                        help="Annualized standard deviation of portfolio daily returns.",
+                    )
                 with c3:
-                    st.metric("Sharpe ratio", f"{port_metrics['sharpe']:.2f}")
-                    st.metric("Maximum drawdown", f"{port_metrics['max_dd']:.2%}")
+                    st.metric(
+                        "Sharpe ratio",
+                        f"{port_metrics['sharpe']:.2f}",
+                        help="Excess portfolio return per unit of volatility.",
+                    )
+                    st.metric(
+                        "Maximum drawdown",
+                        f"{port_metrics['max_dd']:.2%}",
+                        help="Largest peak-to-trough loss of the portfolio over the period.",
+                    )
