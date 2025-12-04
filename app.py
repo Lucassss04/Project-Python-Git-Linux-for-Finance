@@ -27,9 +27,7 @@ st.markdown(
 )
 
 st.title("Quant Portfolio Dashboard")
-st.caption(
-    "Single-asset and multi-asset analytics for quantitative finance."
-)
+st.caption("Single-asset and multi-asset analytics for quantitative finance.")
 
 # ----------------- Navigation -----------------
 if "page" not in st.session_state:
@@ -41,18 +39,18 @@ def go_home():
 
 
 def go_single_asset():
-    st.session_state.page = "Module A: Single Asset"
+    st.session_state.page = "Single Asset"
 
 
 def go_portfolio():
-    st.session_state.page = "Module B: Portfolio"
+    st.session_state.page = "Portfolio"
 
 
 with st.sidebar:
     st.header("Navigation")
     st.button("Home", on_click=go_home, use_container_width=True)
-    st.button("Module A (Single Asset)", on_click=go_single_asset, use_container_width=True)
-    st.button("Module B (Portfolio)", on_click=go_portfolio, use_container_width=True)
+    st.button("Single Asset", on_click=go_single_asset, use_container_width=True)
+    st.button("Portfolio", on_click=go_portfolio, use_container_width=True)
     st.markdown("---")
     st.caption("Python / Git / Linux for Finance – ESILV")
 
@@ -109,11 +107,10 @@ def format_timestamp_utc(ts: dt.datetime | None) -> str:
 # ----------------- Pages content -----------------
 # ========== HOME ==========
 if st.session_state.page == "Home":
-    # Hero section
+    # Hero section (no duplicate title)
     st.markdown(
         """
-        <div style="padding: 1rem 0 1.5rem 0;">
-            <h2 style="margin-bottom: 0.1rem;">Quant Portfolio Dashboard</h2>
+        <div style="padding: 0.5rem 0 1.5rem 0;">
             <p style="font-size: 0.95rem; color: #5c6370; margin-bottom: 0.5rem;">
                 Single-asset and multi-asset analytics for portfolio managers and quantitative teams.
             </p>
@@ -138,10 +135,10 @@ if st.session_state.page == "Home":
 
         cta_col1, cta_col2 = st.columns(2)
         with cta_col1:
-            if st.button("Open Module A – Single Asset", use_container_width=True):
+            if st.button("Open Single Asset module", use_container_width=True):
                 go_single_asset()
         with cta_col2:
-            if st.button("Open Module B – Portfolio", use_container_width=True):
+            if st.button("Open Portfolio module", use_container_width=True):
                 go_portfolio()
 
     with hero_col2:
@@ -187,17 +184,17 @@ if st.session_state.page == "Home":
     # Usage guide
     st.markdown("### 📌 How to use the platform")
     st.write(
-        "1. **Module A – Single Asset:** select an instrument, choose the analysis period and compare Buy & Hold, "
+        "1. **Single Asset module:** select an instrument, choose the analysis period and compare Buy & Hold, "
         "Moving Average and Momentum strategies on the same equity curve.\n"
-        "2. **Module B – Portfolio:** build a multi-asset portfolio, choose equal or custom weights and a "
+        "2. **Portfolio module:** build a multi-asset portfolio, choose equal or custom weights and a "
         "rebalancing frequency, then analyse diversification and risk metrics.\n"
         "3. Adjust strategy parameters, export tables if needed and use the daily report for an end-of-day "
         "quantitative summary."
     )
 
-# ========== MODULE A: SINGLE ASSET ==========
-elif st.session_state.page == "Module A: Single Asset":
-    st.subheader("Module A: Single Asset – Buy & Hold vs MA vs Momentum")
+# ========== SINGLE ASSET ==========
+elif st.session_state.page == "Single Asset":
+    st.subheader("Single Asset – Buy & Hold vs MA vs Momentum")
 
     # Asset selection
     col_left, col_right = st.columns([2, 1])
@@ -344,9 +341,9 @@ elif st.session_state.page == "Module A: Single Asset":
                 st.metric("Maximum drawdown", f"{metrics_mom['max_dd']:.2%}")
                 st.metric("Daily 95% VaR", f"{metrics_mom['var_95']:.2%}")
 
-# ========== MODULE B: PORTFOLIO ==========
-elif st.session_state.page == "Module B: Portfolio":
-    st.subheader("Module B: Portfolio – Equal-weight / Custom")
+# ========== PORTFOLIO ==========
+elif st.session_state.page == "Portfolio":
+    st.subheader("Portfolio – Equal-weight / Custom")
 
     # --- 1) Choose one or several categories ---
     all_categories = list(UNIVERSE_BY_CATEGORY.keys())
