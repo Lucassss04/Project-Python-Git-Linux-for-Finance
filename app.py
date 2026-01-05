@@ -8,6 +8,9 @@ from data import load_yahoo_data
 from metrics import compute_performance_metrics
 from strategies import moving_average_strategy, momentum_strategy
 
+from streamlit_autorefresh import st_autorefresh
+
+
 # ----------------- Global config -----------------
 st.set_page_config(
     page_title="Quant Portfolio Dashboard",
@@ -45,6 +48,23 @@ def go_portfolio():
     st.session_state.page = "Portfolio"
 
 
+# ----------------- Navigation + Refresh -----------------
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
+
+def go_home():
+    st.session_state.page = "Home"
+
+def go_single_asset():
+    st.session_state.page = "Single Asset"
+
+def go_portfolio():
+    st.session_state.page = "Portfolio"
+
+
+auto_refresh = True
+refresh_mins = 5
+
 with st.sidebar:
     st.header("Navigation")
     st.button("Home", on_click=go_home, use_container_width=True)
@@ -52,6 +72,16 @@ with st.sidebar:
     st.button("Portfolio", on_click=go_portfolio, use_container_width=True)
     st.markdown("---")
     st.caption("Python / Git / Linux for Finance – ESILV")
+
+    st.markdown("### Refresh")
+    auto_refresh = st.toggle("Auto-refresh", value=True)
+    refresh_mins = st.number_input(
+        "Refresh interval (minutes)", min_value=1, max_value=60, value=5
+    )
+
+if auto_refresh:
+    st_autorefresh(interval=int(refresh_mins * 60 * 1000), key="auto_refresh")
+
 
 # ----------------- Asset universe -----------------
 UNIVERSE = {
@@ -237,9 +267,14 @@ elif st.session_state.page == "Single Asset":
                 "Momentum lookback (days)", min_value=10, max_value=252, value=60
             )
 
-    if st.button("Load / refresh data", type="primary"):
+    do_refresh = st.button("Load / refresh data", type="primary") or auto_refresh
+
+    if do_refresh:
         with st.spinner("Downloading data..."):
-            data = load_yahoo_data(ticker, start, end)
+            try:
+                data = load_yahoo_data(ticker, start, end)
+            except Exception:
+                data = None
 
         if data is None:
             st.error("No data received for this asset and period.")
@@ -249,9 +284,7 @@ elif st.session_state.page == "Single Asset":
 
             # === KPIs row – Single Asset ===
             last_price = float(data["price"].iloc[-1])
-            today_returns = data["return"].loc[
-                data.index.date == data.index[-1].date()
-            ]
+            today_returns = data["return"].loc[data.index.date == data.index[-1].date()]
             day_ret = float(today_returns.sum()) if not today_returns.empty else 0.0
             cum_bh = (1 + data["return"]).cumprod().iloc[-1] - 1
 
@@ -274,9 +307,7 @@ elif st.session_state.page == "Single Asset":
             )
 
             # Strategies
-            ma_df = moving_average_strategy(
-                data, short_window=short_w, long_window=long_w
-            )
+            ma_df = moving_average_strategy(data, short_window=short_w, long_window=long_w)
             mom_df = momentum_strategy(data, lookback=lookback_mom)
 
             # Tabs: charts and data
@@ -284,7 +315,6 @@ elif st.session_state.page == "Single Asset":
 
             with chart_tab:
                 st.subheader("Price and strategies")
-
                 chart_df = pd.DataFrame(index=data.index)
                 chart_df["Price"] = data["price"]
                 chart_df["Buy & Hold"] = (1 + data["return"]).cumprod()
@@ -294,7 +324,6 @@ elif st.session_state.page == "Single Asset":
 
             with table_tab:
                 st.subheader("Last observations")
-
                 tail_df = pd.DataFrame(
                     {
                         "price": np.ravel(data["price"].to_numpy()),
@@ -304,12 +333,10 @@ elif st.session_state.page == "Single Asset":
                     },
                     index=data.index,
                 )
-
                 st.dataframe(tail_df.tail())
 
             # Performance / risk metrics
             st.subheader("Performance and risk metrics")
-
             metrics_bh = compute_performance_metrics(data["return"])
             metrics_ma = compute_performance_metrics(ma_df["strategy_return"])
             metrics_mom = compute_performance_metrics(mom_df["strategy_return"])
@@ -339,6 +366,7 @@ elif st.session_state.page == "Single Asset":
                 st.metric("Sharpe ratio", f"{metrics_mom['sharpe']:.2f}")
                 st.metric("Maximum drawdown", f"{metrics_mom['max_dd']:.2%}")
                 st.metric("Daily 95% VaR", f"{metrics_mom['var_95']:.2%}")
+
 
 # ========== PORTFOLIO ==========
 elif st.session_state.page == "Portfolio":
