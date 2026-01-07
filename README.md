@@ -1,29 +1,29 @@
-# Project: Python, Git, Linux for Finance 
+# Project: Python, Git, Linux for Finance
 
-*Live app:** https://quant-portfolio.streamlit.app/  
+**Live app:** https://quant-portfolio.streamlit.app/
 
-Interactive dashboard for **single-asset strategy backtesting** and **multi-asset portfolio analytics**, built for the *Python / Git / Linux for Finance* course project (ESILV). 
+Interactive dashboard for **single-asset strategy backtesting** and **multi-asset portfolio analytics**, built for the *Python / Git / Linux for Finance* course project (ESILV).
 
-**Authors:** Lucas Stalter (Quant A — Single Asset) & Christian Yu (Quant B — Portfolio). 
+**Authors:** Lucas Stalter (Quant A — Single Asset) & Christian Yu (Quant B — Portfolio).
 
 ---
 
-## Project goals (course requirements)
+## Project goals
 
-This project aims to deliver a professional workflow that: 
-- Retrieves financial data from a dynamic source and updates frequently. 
-- Displays the current value of chosen assets and key analytics in an interactive dashboard. 
-- Implements quantitative strategies and portfolio simulations. 
-- Auto-refreshes the dashboard every ~5 minutes. 
-- Produces an end-of-day report (intended to be scheduled via cron on a Linux VM). 
-- Uses a clean GitHub workflow (separate branches per module + pull requests + conflict resolution). 
+This project aims to deliver a professional workflow that:
+- Retrieves financial data from a dynamic source and updates frequently.
+- Displays the current value of chosen assets and key analytics in an interactive dashboard.
+- Implements quantitative strategies and portfolio simulations.
+- Auto-refreshes the dashboard every ~5 minutes.
+- Produces an end-of-day report generated at a fixed time (8pm) via cron, stored locally on the VM.
+- Uses a clean GitHub workflow (separate branches per module + pull requests + conflict resolution).
 
 ---
 
 ## Features
 
 ### Quant A — Single Asset (Univariate module)
-Focus: one asset at a time (e.g., ENGI, EUR/USD, gold). 
+Focus: one asset at a time (e.g., ENGI, EUR/USD, gold).
 
 - Strategy backtests:
   - Buy & Hold
@@ -52,7 +52,7 @@ Focus: multi-asset portfolio analytics (at least 3 assets).
 
 ## Data source
 
-Market prices are retrieved from Yahoo Finance via the `yfinance` Python package (through `data.py`).  
+Market prices are retrieved from Yahoo Finance via the `yfinance` Python package (through `data.py`).
 Data is converted into:
 - `price` series
 - `return` series (daily returns)
@@ -74,3 +74,26 @@ Data is converted into:
 ├── daily_report_log.txt        # Example output log (generated locally)
 ├── requirements.txt            # Python dependencies
 └── README.md
+
+```
+
+## Linux VM deployment (GCP)
+
+This project is also deployed on a hosted Linux VM (Google Compute Engine) to satisfy the course requirement to run the app on a Linux server and keep it accessible during the evaluation week.
+
+### Install & run
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip git cron
+
+git clone https://github.com/Lucassss04/Project-Python-Git-Linux-for-Finance.git
+cd Project-Python-Git-Linux-for-Finance
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Run Streamlit on the VM (persistent)
+nohup .venv/bin/streamlit run app.py --server.address 0.0.0.0 --server.port 8501 > streamlit.log 2>&1 &
+
+
