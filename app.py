@@ -1,5 +1,5 @@
 import datetime as dt
-
+from predictions import predict_future_prices
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -321,6 +321,26 @@ elif st.session_state.page == "Single Asset":
                 chart_df["MA Strategy"] = (1 + ma_df["strategy_return"]).cumprod()
                 chart_df["Momentum Strategy"] = (1 + mom_df["strategy_return"]).cumprod()
                 st.line_chart(chart_df)
+                st.markdown("---")
+            st.subheader(" Prediction")
+            
+            show_pred = st.checkbox("Show Price Prediction (Linear Regression)", value=False)
+            
+            if show_pred:
+                days_pred = st.slider("Forecast Horizon (days)", 10, 90, 30)
+                
+                pred_df, trend_slope = predict_future_prices(data, days_ahead=days_pred)
+                
+                trend_str = "Positive" if trend_slope > 0 else "Negative"
+                st.info(f"Model Trend: **{trend_str}** (Slope: {trend_slope:.4f})")
+                
+                future_chart = pd.DataFrame({
+                    "Predicted Price": pred_df["Predicted Price"]
+                })
+                st.line_chart(future_chart)
+                
+                with st.expander("See Prediction Data"):
+                    st.dataframe(pred_df)
 
             with table_tab:
                 st.subheader("Last observations")
