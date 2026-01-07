@@ -122,11 +122,16 @@ def render_portfolio(universe_by_category: dict, auto_refresh: bool):
             custom_weights.append(w)
 
         total_w = sum(custom_weights)
+
         if total_w == 0:
             st.warning("Total weight is 0. Falling back to equal-weight allocation.")
             weights = np.array([1.0 / len(asset_list)] * len(asset_list))
+        elif abs(total_w - 100.0) > 0.5:
+            st.warning(f"Custom weights must sum to 100%. Current total: {total_w:.1f}%.")
+            st.stop()
         else:
-            weights = np.array(custom_weights) / total_w
+            weights = np.array(custom_weights) / 100.0
+
 
     weights_series = pd.Series(weights, index=asset_list)
     st.dataframe(weights_series.rename("Weight"))
@@ -200,4 +205,3 @@ def render_portfolio(universe_by_category: dict, auto_refresh: bool):
     with c3:
         st.metric("Sharpe ratio", f"{port_metrics['sharpe']:.2f}")
         st.metric("Maximum drawdown", f"{port_metrics['max_dd']:.2%}")
-
