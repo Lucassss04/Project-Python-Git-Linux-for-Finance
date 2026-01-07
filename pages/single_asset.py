@@ -46,20 +46,21 @@ def render_single_asset(universe: dict, auto_refresh: bool):
 
     # Strategy parameters
     with st.expander("Strategy parameters"):
-        col1, col2 = st.columns(2)
-        with col1:
-            short_w = st.number_input(
-                "Short MA window (days)", min_value=5, max_value=100, value=20
-            )
-            long_w = st.number_input(
-                "Long MA window (days)", min_value=10, max_value=250, value=50
-            )
-        with col2:
-            lookback_mom = st.number_input(
-                "Momentum lookback (days)", min_value=10, max_value=252, value=60
-            )
+    col1, col2 = st.columns(2)
+    with col1:
+        short_w = st.number_input(...)
+        long_w = st.number_input(...)
+    with col2:
+        lookback_mom = st.number_input(...)
+
+
+    if short_w >= long_w:
+        st.warning("Short MA window must be strictly smaller than Long MA window.")
+        st.stop()
+
 
     do_refresh = st.button("Load / refresh data", type="primary") or auto_refresh
+
 
     if not do_refresh:
         st.info("Click 'Load / refresh data' or enable auto-refresh to load data.")
