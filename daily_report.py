@@ -51,3 +51,4 @@ Daily 95% VaR: {metrics['var_95']:.2%}
 
 if __name__ == "__main__":
     generate_daily_report()
+#
