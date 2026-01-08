@@ -111,8 +111,7 @@ The application is hosted on a Google Compute Engine VM (Debian/Ubuntu).
 
 
 #### Repository setup
-git clone [https://github.com/Lucassss04/Project-Python-Git-Linux-for-Finance.git](https://github.com/Lucassss04/Project-Python-Git-Linux-for-Finance.git)
-cd Project-Python-Git-Linux-for-Finance
+
 
 ```bash
 # 1. System dependencies
