@@ -105,6 +105,7 @@ streamlit run app.py
 ## ☁️ Linux Server Deployment & Automation
 
 The project is deployed on a Linux Virtual Machine (GCP/Debian) to ensure **24/7 availability** and **automated daily reporting**. The deployment strategy prioritizes stability using absolute paths, persistent background processes, and dedicated logging.
+External IP address : 34.10.99.181
 
 ### 1. Environment Setup
 The application is hosted on a Google Compute Engine VM (Debian/Ubuntu).
