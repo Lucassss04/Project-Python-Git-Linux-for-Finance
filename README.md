@@ -71,42 +71,8 @@ Risk metrics are calculated in `metrics.py` following industry standards:
 
 ---
 
-## ☁️ Linux Server Deployment & Automation
-
-The project satisfies the requirement for continuous 24/7 deployment on a Linux Virtual Machine.
-
-### 1. Environment Setup
-The application is hosted on a Google Compute Engine VM (Debian/Ubuntu).
-# System dependencies
-sudo apt update && sudo apt install python3-venv git cron
-
-# Repository setup
-git clone [https://github.com/Lucassss04/Project-Python-Git-Linux-for-Finance.git](https://github.com/Lucassss04/Project-Python-Git-Linux-for-Finance.git)
-cd Project-Python-Git-Linux-for-Finance
-
-# Virtual Environment
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-2. Persistent Execution
-
-We use nohup to background the process, ensuring the dashboard remains active after the SSH session terminates.
-
-nohup .venv/bin/streamlit run app.py --server.port 8501 > streamlit.log 2>&1 &
-
-3. Automated Cron Job
-
-A dedicated script (daily_report.py) generates a daily performance log for the CAC 40.
-
-Crontab Configuration: To schedule the report daily at 20:00 (8 PM), run crontab -e and append:
-
-0 20 * * * cd /home/your_user/Project-Python-Git-Linux-for-Finance && .venv/bin/python daily_report.py >> cron.log 2>&1
-
-Output: Reports are appended to daily_report_log.txt.
-
 Repository Structure
-
+```
 .
 ├── app.py                      # Main entry point (Streamlit Navigation & Config)
 ├── data.py                     # Data ingestion wrapper (yfinance)
@@ -119,7 +85,7 @@ Repository Structure
 └── pages/
     ├── single_asset.py         # [Quant A] UI & Logic
     └── portfolio.py            # [Quant B] UI & Logic
-
+```
 Local Installation
 
     Clone the repository:
@@ -133,3 +99,70 @@ pip install -r requirements.txt
 Launch the dashboard:
 
 streamlit run app.py
+
+---
+
+## ☁️ Linux Server Deployment & Automation
+
+The project is deployed on a Linux Virtual Machine (GCP/Debian) to ensure **24/7 availability** and **automated daily reporting**. The deployment strategy prioritizes stability using absolute paths, persistent background processes, and dedicated logging.
+
+### 1. Environment Setup
+The application is hosted on a Google Compute Engine VM (Debian/Ubuntu).
+
+
+#### Repository setup
+git clone [https://github.com/Lucassss04/Project-Python-Git-Linux-for-Finance.git](https://github.com/Lucassss04/Project-Python-Git-Linux-for-Finance.git)
+cd Project-Python-Git-Linux-for-Finance
+
+```bash
+# 1. System dependencies
+sudo apt update && sudo apt install -y git python3-venv cron
+
+# 2. Clone repository
+git clone https://github.com/Lucassss04/Project-Python-Git-Linux-for-Finance.git
+cd Project-Python-Git-Linux-for-Finance
+
+# 3. Python Virtual Environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+```
+
+### 2. Continuous Execution (Background Process)
+
+To keep the Streamlit dashboard running **even after the SSH session is closed**, we launch it with `nohup` and send it to the background with `&`.
+`nohup` prevents the process from receiving the hangup signal (SIGHUP) when the terminal disconnects, which is why it continues running after logout. 
+We also use **absolute paths** to make the command independent from the current working directory and avoid path-related issues. 
+
+```bash
+nohup /home/<USER>/Project-Python-Git-Linux-for-Finance/.venv/bin/streamlit run \
+  /home/<USER>/Project-Python-Git-Linux-for-Finance/app.py \
+  --server.address 0.0.0.0 --server.port 8501 \
+  > /home/<USER>/Project-Python-Git-Linux-for-Finance/streamlit.log 2>&1 &
+```
+
+### 3. Automated Daily Reporting (Cron)
+
+This project automates reporting using a cron job that executes `daily_report.py` every day at **20:00** (Paris time). The resulting market report is stored locally on the VM, satisfying the persistent reporting requirement. 
+
+The implementation addresses the restricted context of cron (minimal environment variables, undefined working directory) by using **absolute paths**, explicit directory switching (`cd`), and redirecting all outputs to a persistent log file.
+
+### 3.1 Timezone Configuration (Europe/Paris)
+To ensure the report runs at 8 PM local time rather than UTC, we configure the system timezone:
+
+```bash
+sudo timedatectl set-timezone Europe/Paris
+timedatectl  # Verify Local time matches CET/CEST
+```
+#### 3.2 Crontab Entry (Daily at 20:00)
+We schedule the automated report by editing the user crontab (`crontab -e`) and appending the command below.
+
+```cron
+0 20 * * * cd /home/<USER>/Project-Python-Git-Linux-for-Finance && /home/<USER>/Project-Python-Git-Linux-for-Finance/.venv/bin/python /home/<USER>/Project-Python-Git-Linux-for-Finance/daily_report.py >> /home/<USER>/Project-Python-Git-Linux-for-Finance/daily_report_cron.log 2>&1
+```
+To check the file : 
+```
+tail -n 50 /home/<USER>/Project-Python-Git-Linux-for-Finance/daily_report_cron.log
+```
+
