@@ -7,12 +7,10 @@ from data import load_yahoo_data
 from metrics import compute_performance_metrics
 from strategies import moving_average_strategy, momentum_strategy
 
-
 def format_timestamp_utc(ts: dt.datetime | None) -> str:
     if ts is None:
         return "-"
     return ts.strftime("%Y-%m-%d %H:%M:%S")
-
 
 def render_single_asset(universe: dict, auto_refresh: bool):
     st.subheader("Single Asset – Buy & Hold vs MA vs Momentum")
@@ -36,31 +34,30 @@ def render_single_asset(universe: dict, auto_refresh: bool):
         max_value=default_end,
     )
 
+    
     if isinstance(date_range, tuple) and len(date_range) == 2:
         start, end = date_range
     else:
         start = default_start
-        end = date_range
+        end = default_end
 
     st.write(f"Selected ticker: **{ticker}**")
 
     # Strategy parameters
-    with st.expander("Strategy parameters"):
-    col1, col2 = st.columns(2)
-    with col1:
-        short_w = st.number_input(...)
-        long_w = st.number_input(...)
-    with col2:
-        lookback_mom = st.number_input(...)
+    with st.expander("Strategy parameters", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            short_w = st.number_input("Short MA window", min_value=1, value=20)
+            long_w = st.number_input("Long MA window", min_value=1, value=50)
+        with col2:
+            lookback_mom = st.number_input("Momentum lookback (days)", min_value=1, value=60)
 
-
+    # Parameters validation
     if short_w >= long_w:
         st.warning("Short MA window must be strictly smaller than Long MA window.")
         st.stop()
 
-
     do_refresh = st.button("Load / refresh data", type="primary") or auto_refresh
-
 
     if not do_refresh:
         st.info("Click 'Load / refresh data' or enable auto-refresh to load data.")
@@ -69,20 +66,28 @@ def render_single_asset(universe: dict, auto_refresh: bool):
     with st.spinner("Downloading data..."):
         try:
             data = load_yahoo_data(ticker, start, end)
-        except Exception:
+        except Exception as e:
+            st.error(f"Error loading data: {e}")
             data = None
 
-    if data is None:
+    if data is None or data.empty:
         st.error("No data received for this asset and period.")
         return
 
     st.session_state.last_update_single = dt.datetime.utcnow()
     st.success(f"Data loaded: {len(data)} observations.")
 
-    # KPIs
+    
     last_price = float(data["price"].iloc[-1])
-    today_returns = data["return"].loc[data.index.date == data.index[-1].date()]
-    day_ret = float(today_returns.sum()) if not today_returns.empty else 0.0
+    
+    today = data.index[-1].date()
+    today_data = data[data.index.date == today]
+    
+    if not today_data.empty:
+        day_ret = float(today_data["return"].iloc[-1])
+    else:
+        day_ret = 0.0
+        
     cum_bh = (1 + data["return"]).cumprod().iloc[-1] - 1
 
     kpi1, kpi2, kpi3 = st.columns(3)
@@ -103,7 +108,7 @@ def render_single_asset(universe: dict, auto_refresh: bool):
         help="Time when data was last refreshed.",
     )
 
-    # Strategies
+    # Strategies calculation
     ma_df = moving_average_strategy(data, short_window=short_w, long_window=long_w)
     mom_df = momentum_strategy(data, lookback=lookback_mom)
 
@@ -114,6 +119,7 @@ def render_single_asset(universe: dict, auto_refresh: bool):
         st.subheader("Price and strategies")
         chart_df = pd.DataFrame(index=data.index)
         chart_df["Price"] = data["price"]
+        # Normalisation base 100 ou affichage cumulé direct
         chart_df["Buy & Hold"] = (1 + data["return"]).cumprod()
         chart_df["MA Strategy"] = (1 + ma_df["strategy_return"]).cumprod()
         chart_df["Momentum Strategy"] = (1 + mom_df["strategy_return"]).cumprod()
@@ -163,4 +169,3 @@ def render_single_asset(universe: dict, auto_refresh: bool):
         st.metric("Sharpe ratio", f"{metrics_mom['sharpe']:.2f}")
         st.metric("Maximum drawdown", f"{metrics_mom['max_dd']:.2%}")
         st.metric("Daily 95% VaR", f"{metrics_mom['var_95']:.2%}")
-
