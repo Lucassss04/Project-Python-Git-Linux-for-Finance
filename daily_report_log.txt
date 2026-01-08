@@ -14,3 +14,4 @@ Sharpe ratio: 0.19
 Maximum drawdown: -13.30%
 Daily 95% VaR: -1.59%
 
+
