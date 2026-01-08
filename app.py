@@ -66,21 +66,19 @@ if auto_refresh:
 
 # ----------------- Asset universe -----------------
 UNIVERSE = {
-    "TotalEnergies (TTE)": "TTE.PA",
+    
     "Engie (ENGI)": "ENGI.PA",
     "CAC 40": "^FCHI",
     "EURUSD": "EURUSD=X",
     "Bitcoin": "BTC-USD",
     "Ethereum": "ETH-USD",
     "Solana": "SOL-USD",
-    "Gold (XAUUSD)": "XAUUSD=X",
     "WTI Crude Oil": "CL=F",
     "Natural Gas": "NG=F",
 }
 
 UNIVERSE_BY_CATEGORY = {
     "Equities / Indices": {
-        "TotalEnergies (TTE)": "TTE.PA",
         "Engie (ENGI)": "ENGI.PA",
         "CAC 40": "^FCHI",
     },
@@ -91,7 +89,6 @@ UNIVERSE_BY_CATEGORY = {
         "Solana": "SOL-USD",
     },
     "Commodities": {
-        "Gold (XAUUSD)": "XAUUSD=X",
         "WTI Crude Oil": "CL=F",
         "Natural Gas": "NG=F",
     },
@@ -168,3 +165,5 @@ elif st.session_state.page == "Single Asset":
 
 elif st.session_state.page == "Portfolio":
     render_portfolio(UNIVERSE_BY_CATEGORY, auto_refresh)
+
+#
