@@ -31,3 +31,4 @@ def load_yahoo_data(ticker: str, start, end):
     df = df.dropna()
 
     return df
+#
